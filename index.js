@@ -9,7 +9,7 @@ let dec = new TextDecoder("utf-8");
 
 // Key Generation (on Alice's side)
 let alice_sk = umbral.SecretKey.random();
-console.log(alice_sk)
+console.log(alice_sk.toString())
 let alice_pk = alice_sk.publicKey();
 console.log(alice_pk.toCompressedBytes())
 let signing_sk = umbral.SecretKey.random();
