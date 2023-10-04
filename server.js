@@ -1,5 +1,6 @@
 const express = require('express');
 const umbral = require("@nucypher/umbral-pre");
+const rubixUtil = require('./rubix-util'); 
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -73,6 +74,115 @@ app.post('/decrypt', (req, res) => {
 
     return res.json({ plaintext });
 });
+
+app.post('/api/createdid', async (req, res) => {
+  try {
+    // Extract parameters from the request body, assuming it contains "port" and "didImagepath"
+    const { port, didImagepath } = req.body;
+
+    // Call the createDID function
+    const response = await rubixUtil.createDID(port, didImagepath);
+
+    // Respond with a success message
+    res.json({ response });
+  } catch (error) {
+    // Handle errors and respond with an error message
+    console.error('Error generating DID:', error.message);
+    res.status(500).json({ error: 'An error occurred while generating DID' });
+  }
+});
+
+app.post('/api/generate-smart-contract', async (req, res) => {
+  try {
+    const { did, wasmPath, schemaPath, rawCodePath, port } = req.body;
+
+    // Call the generateSmartContract function
+    const response = await rubixUtil.generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port);
+
+    // Respond with a success message
+    res.json({ response });
+  } catch (error) {
+    console.error('Error:', error.message);
+    res.status(500).json({ error: 'An error occurred while generating the smart contract' });
+  }
+});
+
+app.post('/api/deploy-smart-contract', async (req, res) => {
+  try {
+    const {
+      comment,
+      deployerAddress,
+      quorumType,
+      rbtAmount,
+      smartContractToken,
+      port: deployPort, // Rename "port" to "deployPort" to avoid conflict
+    } = req.body;
+
+    // Call the deploySmartContract function directly
+    const response = await rubixUtil.deploySmartContract(
+      comment,
+      deployerAddress,
+      quorumType,
+      rbtAmount,
+      smartContractToken,
+      deployPort
+    );
+
+    // Respond with the generated ID
+    res.json({ response });
+  } catch (error) {
+    console.error('Error:', error.message);
+    res.status(500).json({ error: 'An error occurred while deploying the smart contract' });
+  }
+});
+
+app.post('/api/execute-smart-contract', async (req, res) => {
+  try {
+    const {
+      comment,
+      executorAddress,
+      quorumType,
+      smartContractData,
+      smartContractToken,
+      port: executionPort, // Rename "port" to "executionPort" to avoid conflict
+    } = req.body;
+
+    // Call the executeSmartContract function directly
+    const response = await rubixUtil.executeSmartContract(
+      comment,
+      executorAddress,
+      quorumType,
+      smartContractData,
+      smartContractToken,
+      executionPort
+    );
+
+    // Respond with a success message
+    res.json({ response });
+  } catch (error) {
+    console.error('Error:', error.message);
+    res.status(500).json({ error: 'An error occurred while executing the smart contract' });
+  }
+});
+
+app.post('/api/subscribe-contract', async (req, res) => {
+  try {
+    const { contractToken, port: subscribePort } = req.body;
+
+    // Call the subscribeSmartContract function directly
+    const response = await rubixUtil.subscribeSmartContract(contractToken, subscribePort);
+
+    // Respond with a success message
+    res.json({ response });
+
+    
+  } catch (error) {
+    console.error('Error:', error.message);
+    res.status(500).json({ error: 'An error occurred while subscribing to the smart contract' });
+  }
+});
+
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
