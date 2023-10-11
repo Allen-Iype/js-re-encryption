@@ -35,7 +35,7 @@ async function createDID(port, didImagepath) {
 }
 const { exec } = require('child_process');
 
-function generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port) {
+async function generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port) {
 
 const curlCommand = `curl -X POST -H "Content-Type: multipart/form-data" -F "did=${did}" -F "binaryCodePath=${wasmPath}" -F "rawCodePath=${rawCodePath}" -F "schemaFilePath=${schemaPath}" http://localhost:${port}/api/generate-smart-contract`;
 
