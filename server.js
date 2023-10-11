@@ -116,7 +116,7 @@ app.post('/api/createdid', async (req, res) => {
 // Handle the POST request with form data
 app.post('/api/generate-smart-contract', upload.fields([{ name: 'did' }, { name: 'wasmPath' }, { name: 'schemaPath' }, { name: 'rawCodePath' }, { name: 'port' }]), async (req, res) => {
   try {
-    const { did, wasmPath, schemaPath, rawCodePath, port } = req.body;
+    const { did, wasmPath, schemaPath, rawCodePath, port } = req.files;
 
     // Call the generateSmartContract function
     const response = await rubixUtil.generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port);
