@@ -166,10 +166,6 @@ app.post('/api/generate-smart-contract', upload.fields([
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
-
 app.post('/api/deploy-smart-contract', async (req, res) => {
   try {
     const {

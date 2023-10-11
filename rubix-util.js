@@ -265,7 +265,7 @@ async function getSmartContractData(port, token) {
 
   module.exports = {
     createDID,
-    generateSmartContract,
+  //  generateSmartContract,
     getSmartContractData,
     executeSmartContract,
     signatureResponse,
