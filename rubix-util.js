@@ -33,41 +33,56 @@ async function createDID(port, didImagepath) {
     console.error('Error generating DID:', error.message);
   }
 }
+const { exec } = require('child_process');
 
+function generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port) {
 
-async function generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port) {
-  const form = new FormData();
+const curlCommand = `curl -X POST -H "Content-Type: multipart/form-data" -F "did=${did}" -F "binaryCodePath=${wasmPath}" -F "rawCodePath=${rawCodePath}" -F "schemaFilePath=${schemaPath}" http://localhost:${port}/api/generate-smart-contract`;
 
-  // Add the form fields
-  form.append('did', did);
-
-  // Add the binaryCodePath field
-  form.append('binaryCodePath', fs.createReadStream(wasmPath));
-
-  // Add the rawCodePath field
-  form.append('rawCodePath', fs.createReadStream(rawCodePath));
-
-  // Add the schemaFilePath field
-  form.append('schemaFilePath', fs.createReadStream(schemaPath));
-
-  // Create the HTTP request
-  const url = `http://localhost:${port}/api/generate-smart-contract`;
-  const headers = {
-    ...form.getHeaders(),
-  };
-
-  try {
-    const response = await axios.post(url, form, { headers });
-
-    // Process the data as needed
-    console.log('Response Body in execute Contract:', response.data);
-
-    // Process the response as needed
-    console.log('Response status code:', response.status);
-  } catch (error) {
-    console.error('Error:', error.message);
+exec(curlCommand, (error, stdout, stderr) => {
+  if (error) {
+    console.error('Error:', error);
+    return;
   }
+
+  console.log('Curl Output:', stdout);
+});
+
 }
+
+// async function generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port) {
+//   const form = new FormData();
+
+//   // Add the form fields
+//   form.append('did', did);
+
+//   // Add the binaryCodePath field
+//   form.append('binaryCodePath', fs.createReadStream(wasmPath));
+
+//   // Add the rawCodePath field
+//   form.append('rawCodePath', fs.createReadStream(rawCodePath));
+
+//   // Add the schemaFilePath field
+//   form.append('schemaFilePath', fs.createReadStream(schemaPath));
+
+//   // Create the HTTP request
+//   const url = `http://localhost:${port}/api/generate-smart-contract`;
+//   const headers = {
+//     ...form.getHeaders(),
+//   };
+
+//   try {
+//     const response = await axios.post(url, form, { headers });
+
+//     // Process the data as needed
+//     console.log('Response Body in execute Contract:', response.data);
+
+//     // Process the response as needed
+//     console.log('Response status code:', response.status);
+//   } catch (error) {
+//     console.error('Error:', error.message);
+//   }
+// }
 
 async function getSmartContractData(port, token) {
     try {
@@ -257,4 +272,5 @@ async function getSmartContractData(port, token) {
     subscribeSmartContract,
     fetchSmartContract,
     registerCallBackUrl,
+    deploySmartContract,
   };

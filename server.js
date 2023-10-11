@@ -1,6 +1,5 @@
 const express = require('express');
 const umbral = require("@nucypher/umbral-pre");
-const rubixUtil = require('./rubix-util'); 
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -75,6 +74,8 @@ app.post('/decrypt', (req, res) => {
     return res.json({ plaintext });
 });
 
+const rubixUtil = require('./rubix-util');
+
 app.post('/api/createdid', async (req, res) => {
   try {
     // Extract parameters from the request body, assuming it contains "port" and "didImagepath"
@@ -135,7 +136,7 @@ app.post('/api/deploy-smart-contract', async (req, res) => {
     res.status(500).json({ error: 'An error occurred while deploying the smart contract' });
   }
 });
-
+//The api for executing the smart contract ie Giving the input to the tokenchain
 app.post('/api/execute-smart-contract', async (req, res) => {
   try {
     const {
@@ -165,13 +166,14 @@ app.post('/api/execute-smart-contract', async (req, res) => {
   }
 });
 
+// The api for subscribing to the required smart contract based on the token hash
 app.post('/api/subscribe-contract', async (req, res) => {
   try {
     const { contractToken, port: subscribePort } = req.body;
 
     // Call the subscribeSmartContract function directly
     const response = await rubixUtil.subscribeSmartContract(contractToken, subscribePort);
-
+    rubixUtil.registerCallBackUrl(contractToken,3000,"api/v1/contract-input",subscribePort);
     // Respond with a success message
     res.json({ response });
 
