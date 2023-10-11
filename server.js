@@ -1,13 +1,16 @@
 const express = require('express');
 const umbral = require("@nucypher/umbral-pre");
 const multer = require('multer');
+const fs = require('fs');
+const FormData = require('form-data');
+const axios = require('axios');
 
 const app = express();
 const port = process.env.PORT || 3003;
 
 // Set up Multer to handle file uploads and form data
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+// const upload = multer({ storage: storage });
 
 // Middleware to parse JSON payloads
 app.use(express.json());
@@ -114,19 +117,57 @@ app.post('/api/createdid', async (req, res) => {
 // });
 
 // Handle the POST request with form data
-app.post('/api/generate-smart-contract', upload.fields([{ name: 'did' }, { name: 'wasmPath' }, { name: 'schemaPath' }, { name: 'rawCodePath' }, { name: 'port' }]), async (req, res) => {
-  try {
-    const { did, wasmPath, schemaPath, rawCodePath, port } = req.files;
+// app.post('/api/generate-smart-contract', upload.fields([{ name: 'did' }, { name: 'wasmPath' }, { name: 'schemaPath' }, { name: 'rawCodePath' }, { name: 'port' }]), async (req, res) => {
+//   try {
+//     const { did, wasmPath, schemaPath, rawCodePath, port } = req.body;
 
-    // Call the generateSmartContract function
-    const response = await rubixUtil.generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port);
+//     // Call the generateSmartContract function
+//     const response = await rubixUtil.generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port);
+
+//     // Respond with a success message
+//     res.json({ response });
+//   } catch (error) {
+//     console.error('Error:', error.message);
+//     res.status(500).json({ error: 'An error occurred while generating the smart contract' });
+//   }
+// });
+
+const upload = multer({ dest: 'uploads/' });
+
+app.post('/api/generate-smart-contract', upload.fields([
+  { name: 'did' },
+  { name: 'wasmPath' },
+  { name: 'schemaPath' },
+  { name: 'rawCodePath' },
+  { name: 'port' }
+]), async (req, res) => {
+  try {
+    const { did, wasmPath, schemaPath, rawCodePath, port } = req.body;
+
+    // Create a new FormData object to send to the other application
+    const formData = new FormData();
+    formData.append('did', did);
+    formData.append('wasmPath', fs.createReadStream(req.files.wasmPath[0].path));
+    formData.append('schemaPath', fs.createReadStream(req.files.schemaPath[0].path));
+    formData.append('rawCodePath', fs.createReadStream(req.files.rawCodePath[0].path));
+    formData.append('port', port);
+
+    const response = await axios.post('http://localhost:20001/api/generate-smart-contract', formData, {
+      headers: {
+        ...formData.getHeaders(),
+      },
+    });
 
     // Respond with a success message
-    res.json({ response });
+    res.json({ response: response.data });
   } catch (error) {
     console.error('Error:', error.message);
     res.status(500).json({ error: 'An error occurred while generating the smart contract' });
   }
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
 
 app.post('/api/deploy-smart-contract', async (req, res) => {
