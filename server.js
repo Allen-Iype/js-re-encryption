@@ -1,8 +1,13 @@
 const express = require('express');
 const umbral = require("@nucypher/umbral-pre");
+const multer = require('multer');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3003;
+
+// Set up Multer to handle file uploads and form data
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // Middleware to parse JSON payloads
 app.use(express.json());
@@ -93,7 +98,23 @@ app.post('/api/createdid', async (req, res) => {
   }
 });
 
-app.post('/api/generate-smart-contract', async (req, res) => {
+// app.post('/api/generate-smart-contract', async (req, res) => {
+//   try {
+//     const { did, wasmPath, schemaPath, rawCodePath, port } = req.body;
+
+//     // Call the generateSmartContract function
+//     const response = await rubixUtil.generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port);
+
+//     // Respond with a success message
+//     res.json({ response });
+//   } catch (error) {
+//     console.error('Error:', error.message);
+//     res.status(500).json({ error: 'An error occurred while generating the smart contract' });
+//   }
+// });
+
+// Handle the POST request with form data
+app.post('/api/generate-smart-contract', upload.fields([{ name: 'did' }, { name: 'wasmPath' }, { name: 'schemaPath' }, { name: 'rawCodePath' }, { name: 'port' }]), async (req, res) => {
   try {
     const { did, wasmPath, schemaPath, rawCodePath, port } = req.body;
 
