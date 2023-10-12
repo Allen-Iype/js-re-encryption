@@ -35,6 +35,23 @@ async function createDID(port, didImagepath) {
 }
 const { exec } = require('child_process');
 
+function generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port) {
+  const curlCommand = `curl --location 'http://localhost:${port}/api/generate-smart-contract' ` +
+    `--form 'did="${did}"' ` +
+    `--form 'rawCodePath=@${rawCodePath}' ` +
+    `--form 'port="${port}"' ` +
+    `--form 'schemaPath=@${schemaPath}' ` +
+    `--form 'wasmPath=@${wasmPath}'`;
+
+  exec(curlCommand, (error, stdout, stderr) => {
+    if (error) {
+      console.error('Error:', error);
+      return;
+    }
+
+    console.log('Curl Output:', stdout);
+  });
+}
 // async function generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port) {
 
 // const curlCommand = `curl -X POST -H "Content-Type: multipart/form-data" -F "did=${did}" -F "binaryCodePath=${wasmPath}" -F "rawCodePath=${rawCodePath}" -F "schemaFilePath=${schemaPath}" http://localhost:${port}/api/generate-smart-contract`;
@@ -265,7 +282,7 @@ async function getSmartContractData(port, token) {
 
   module.exports = {
     createDID,
-  //  generateSmartContract,
+    generateSmartContract,
     getSmartContractData,
     executeSmartContract,
     signatureResponse,

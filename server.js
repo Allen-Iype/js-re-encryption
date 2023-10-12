@@ -9,8 +9,17 @@ const app = express();
 const port = process.env.PORT || 3003;
 
 // Set up Multer to handle file uploads and form data
-const storage = multer.memoryStorage();
-// const upload = multer({ storage: storage });
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // Specify the directory where the files should be stored
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    // Use the original filename for the stored file
+    cb(null, file.originalname);
+  },
+});
+const upload = multer({ storage: storage });
 
 // Middleware to parse JSON payloads
 app.use(express.json());
@@ -31,135 +40,72 @@ function hexToBytes(hex) {
 
 app.get('/generate-secret-key', (req, res) => {
   let secretKey = umbral.SecretKey.random();
-  let secretKeyBytes = secretKey.toBEBytes(); //Secret key to Big Endian bytes as noted from the rust-umbral-pre documentation
-  console.log(secretKeyBytes)
-  let secretKeyHex = bytesToHex(secretKeyBytes)
-  console.log(secretKeyHex)
+  let secretKeyBytes = secretKey.toBEBytes();
+  let secretKeyHex = bytesToHex(secretKeyBytes);
   let publicKey = secretKey.publicKey().toCompressedBytes();
   let publicKeyHex = bytesToHex(publicKey);
-  
+
   res.json({ secretKey: secretKeyHex, publicKey: publicKeyHex });
 });
 
 app.post('/encrypt', (req, res) => {
-    let { public_key, plaintext } = req.body;
-    console.log(req.body)
-    let plaintext_bytes = Buffer.from(plaintext, 'utf8');
-    let publicKeyBytes = hexToBytes(public_key);
-    console.log(`Public key is ${public_key}`);
-    let publicKey = umbral.PublicKey.fromCompressedBytes(publicKeyBytes);
+  let { public_key, plaintext } = req.body;
+  let plaintext_bytes = Buffer.from(plaintext, 'utf8');
+  let publicKeyBytes = hexToBytes(public_key);
+  let publicKey = umbral.PublicKey.fromCompressedBytes(publicKeyBytes);
 
-  
-    if (!publicKey || !plaintext_bytes) {
-      return res.status(400).json({ error: 'Missing required parameters' });
-    }
-  
-    const [capsule, ciphertext] = umbral.encrypt(publicKey, plaintext_bytes);
-    let capsuleBytes = capsule.toBytes();
-    let capsuleHex = bytesToHex(capsuleBytes);
-    let cipherTextHex = bytesToHex(ciphertext)
-    return res.json({ capsule: capsuleHex, ciphertext: cipherTextHex });
+  if (!publicKey || !plaintext_bytes) {
+    return res.status(400).json({ error: 'Missing required parameters' });
+  }
+
+  const [capsule, ciphertext] = umbral.encrypt(publicKey, plaintext_bytes);
+  let capsuleBytes = capsule.toBytes();
+  let capsuleHex = bytesToHex(capsuleBytes);
+  let cipherTextHex = bytesToHex(ciphertext);
+  return res.json({ capsule: capsuleHex, ciphertext: cipherTextHex });
 });
 
 app.post('/decrypt', (req, res) => {
-    let dec = new TextDecoder("utf-8");
-    const { secretKey, capsule, ciphertext } = req.body;
-    let secretKeyBytes = hexToBytes(secretKey)
-    let capsuleBytes = hexToBytes(capsule)
-    let ciphertextBytes = hexToBytes(ciphertext)
-    let capsuleObtained = umbral.Capsule.fromBytes(capsuleBytes)
-    console.log("Secret Key recreated Bytes:", secretKeyBytes)
-    let secretKeyObtained = umbral.SecretKey.fromBEBytes(secretKeyBytes);
-    console.log(secretKeyObtained)
-  
-    if (!secretKeyObtained || !capsuleObtained || !ciphertext) {
-      return res.status(400).json({ error: 'Missing required parameters' });
-    }
-  
-    let plaintextBytes = umbral.decryptOriginal(secretKeyObtained, capsuleObtained, ciphertextBytes);
-    let plaintext = dec.decode(plaintextBytes)
+  let dec = new TextDecoder("utf-8");
+  const { secretKey, capsule, ciphertext } = req.body;
+  let secretKeyBytes = hexToBytes(secretKey);
+  let capsuleBytes = hexToBytes(capsule);
+  let ciphertextBytes = hexToBytes(ciphertext);
+  let capsuleObtained = umbral.Capsule.fromBytes(capsuleBytes);
+  let secretKeyObtained = umbral.SecretKey.fromBEBytes(secretKeyBytes);
 
-    return res.json({ plaintext });
+  if (!secretKeyObtained || !capsuleObtained || !ciphertext) {
+    return res.status(400).json({ error: 'Missing required parameters' });
+  }
+
+  let plaintextBytes = umbral.decryptOriginal(secretKeyObtained, capsuleObtained, ciphertextBytes);
+  let plaintext = dec.decode(plaintextBytes);
+
+  return res.json({ plaintext });
 });
 
 const rubixUtil = require('./rubix-util');
-
-app.post('/api/createdid', async (req, res) => {
-  try {
-    // Extract parameters from the request body, assuming it contains "port" and "didImagepath"
-    const { port, didImagepath } = req.body;
-
-    // Call the createDID function
-    const response = await rubixUtil.createDID(port, didImagepath);
-
-    // Respond with a success message
-    res.json({ response });
-  } catch (error) {
-    // Handle errors and respond with an error message
-    console.error('Error generating DID:', error.message);
-    res.status(500).json({ error: 'An error occurred while generating DID' });
-  }
-});
-
-// app.post('/api/generate-smart-contract', async (req, res) => {
-//   try {
-//     const { did, wasmPath, schemaPath, rawCodePath, port } = req.body;
-
-//     // Call the generateSmartContract function
-//     const response = await rubixUtil.generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port);
-
-//     // Respond with a success message
-//     res.json({ response });
-//   } catch (error) {
-//     console.error('Error:', error.message);
-//     res.status(500).json({ error: 'An error occurred while generating the smart contract' });
-//   }
-// });
-
-// Handle the POST request with form data
-// app.post('/api/generate-smart-contract', upload.fields([{ name: 'did' }, { name: 'wasmPath' }, { name: 'schemaPath' }, { name: 'rawCodePath' }, { name: 'port' }]), async (req, res) => {
-//   try {
-//     const { did, wasmPath, schemaPath, rawCodePath, port } = req.body;
-
-//     // Call the generateSmartContract function
-//     const response = await rubixUtil.generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port);
-
-//     // Respond with a success message
-//     res.json({ response });
-//   } catch (error) {
-//     console.error('Error:', error.message);
-//     res.status(500).json({ error: 'An error occurred while generating the smart contract' });
-//   }
-// });
-
-const upload = multer({ dest: 'uploads/' });
 
 app.post('/api/generate-smart-contract', upload.fields([
   { name: 'did' },
   { name: 'wasmPath' },
   { name: 'schemaPath' },
   { name: 'rawCodePath' },
-  { name: 'port' }
+  { name: 'port' },
 ]), async (req, res) => {
   try {
-    const { did, wasmPath, schemaPath, rawCodePath, port } = req.body;
+    const { did, port } = req.body;
+    const wasmPath = req.files.wasmPath[0].path;
+    const schemaPath = req.files.schemaPath[0].path;
+    const rawCodePath = req.files.rawCodePath[0].path;
+    console.log(`WASM Path ${wasmPath}`);
+    console.log(`Schema Path ${schemaPath}`);
+    console.log(`Raw Code Path ${rawCodePath}`);
 
-    // Create a new FormData object to send to the other application
-    const formData = new FormData();
-    formData.append('did', did);
-    formData.append('wasmPath', fs.createReadStream(req.files.wasmPath[0].path));
-    formData.append('schemaPath', fs.createReadStream(req.files.schemaPath[0].path));
-    formData.append('rawCodePath', fs.createReadStream(req.files.rawCodePath[0].path));
-    formData.append('port', port);
 
-    const response = await axios.post('http://localhost:20001/api/generate-smart-contract', formData, {
-      headers: {
-        ...formData.getHeaders(),
-      },
-    });
-
-    // Respond with a success message
-    res.json({ response: response.data });
+    
+    const response = await rubixUtil.generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port);
+    res.json({ response });
   } catch (error) {
     console.error('Error:', error.message);
     res.status(500).json({ error: 'An error occurred while generating the smart contract' });
@@ -174,10 +120,8 @@ app.post('/api/deploy-smart-contract', async (req, res) => {
       quorumType,
       rbtAmount,
       smartContractToken,
-      port: deployPort, // Rename "port" to "deployPort" to avoid conflict
+      port: deployPort,
     } = req.body;
-
-    // Call the deploySmartContract function directly
     const response = await rubixUtil.deploySmartContract(
       comment,
       deployerAddress,
@@ -186,15 +130,13 @@ app.post('/api/deploy-smart-contract', async (req, res) => {
       smartContractToken,
       deployPort
     );
-
-    // Respond with the generated ID
     res.json({ response });
   } catch (error) {
     console.error('Error:', error.message);
     res.status(500).json({ error: 'An error occurred while deploying the smart contract' });
   }
 });
-//The api for executing the smart contract ie Giving the input to the tokenchain
+
 app.post('/api/execute-smart-contract', async (req, res) => {
   try {
     const {
@@ -203,10 +145,8 @@ app.post('/api/execute-smart-contract', async (req, res) => {
       quorumType,
       smartContractData,
       smartContractToken,
-      port: executionPort, // Rename "port" to "executionPort" to avoid conflict
+      port: executionPort,
     } = req.body;
-
-    // Call the executeSmartContract function directly
     const response = await rubixUtil.executeSmartContract(
       comment,
       executorAddress,
@@ -215,8 +155,6 @@ app.post('/api/execute-smart-contract', async (req, res) => {
       smartContractToken,
       executionPort
     );
-
-    // Respond with a success message
     res.json({ response });
   } catch (error) {
     console.error('Error:', error.message);
@@ -224,26 +162,21 @@ app.post('/api/execute-smart-contract', async (req, res) => {
   }
 });
 
-// The api for subscribing to the required smart contract based on the token hash
 app.post('/api/subscribe-contract', async (req, res) => {
   try {
     const { contractToken, port: subscribePort } = req.body;
-
-    // Call the subscribeSmartContract function directly
     const response = await rubixUtil.subscribeSmartContract(contractToken, subscribePort);
-    rubixUtil.registerCallBackUrl(contractToken,3000,"api/v1/contract-input",subscribePort);
-    // Respond with a success message
+    rubixUtil.registerCallBackUrl(contractToken, 3000, "api/v1/contract-input", subscribePort);
     res.json({ response });
-
-    
   } catch (error) {
     console.error('Error:', error.message);
     res.status(500).json({ error: 'An error occurred while subscribing to the smart contract' });
   }
 });
 
-
-
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+// app.listen(port, '0.0.0.0', () => {
+//   console.log(`Server is running on port ${port}`);
+// });
