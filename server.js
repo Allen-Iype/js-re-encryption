@@ -102,6 +102,10 @@ app.post('/api/generate-smart-contract', upload.fields([
     console.log(`Schema Path ${schemaPath}`);
     console.log(`Raw Code Path ${rawCodePath}`);
 
+    fs.chmodSync(wasmPath, 0o666); // 0o666 is read and write for everyone
+    fs.chmodSync(schemaPath, 0o666);
+    fs.chmodSync(rawCodePath, 0o666);
+
 
     
     const response = await rubixUtil.generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port);
