@@ -47,10 +47,10 @@ async function generateSmartContract(did, wasmPath, schemaPath, rawCodePath, por
   rawCodePath = rawCodePath.replace(/\\/g, '/');
   const curlCommand = `curl --location 'http://localhost:${port}/api/generate-smart-contract' ` +
     `--form 'did="${did}"' ` +
-    `--form 'rawCodePath=@"${rawCodePath}"' ` +
+    `--form 'rawCodePath=@"/${rawCodePath}"' ` +
     `--form 'port="${port}"' ` +
-    `--form 'schemaPath=@"${schemaPath}"' ` +
-    `--form 'wasmPath=@"${wasmPath}"'`;
+    `--form 'schemaPath=@"/${schemaPath}"' ` +
+    `--form 'wasmPath=@"/${wasmPath}"'`;
 
   exec(curlCommand, (error, stdout, stderr) => {
     if (error) {
