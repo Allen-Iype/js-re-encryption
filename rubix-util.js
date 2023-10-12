@@ -35,7 +35,16 @@ async function createDID(port, didImagepath) {
 }
 const { exec } = require('child_process');
 
-function generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port) {
+async function generateSmartContract(did, wasmPath, schemaPath, rawCodePath, port) {
+  //find the size of a file
+  const stats = fs.statSync(wasmPath);
+  const fileSizeInBytes = stats.size;
+  const fileSizeInMegabytes = fileSizeInBytes / (1024 * 1024);
+  console.log('File Size in MB:', fileSizeInMegabytes);
+
+  wasmPath = wasmPath.replace(/\\/g, '/');
+  schemaPath = schemaPath.replace(/\\/g, '/');
+  rawCodePath = rawCodePath.replace(/\\/g, '/');
   const curlCommand = `curl --location 'http://localhost:${port}/api/generate-smart-contract' ` +
     `--form 'did="${did}"' ` +
     `--form 'rawCodePath=@${rawCodePath}' ` +
